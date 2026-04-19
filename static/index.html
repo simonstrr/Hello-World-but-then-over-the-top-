@@ -7,239 +7,494 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #080808; color: #ccc; font-family: 'Courier New', monospace; overflow: hidden; }
+    body { display: flex; flex-direction: column; }
 
-    html, body {
-      height: 100%;
-      background: #080808;
-      color: #ccc;
-      font-family: 'Courier New', monospace;
-      overflow: hidden;
+    /* ── Curtain overlay ── */
+    #curtain {
+      position: fixed; inset: 0; z-index: 100;
+      background: #000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 1.4rem;
+      cursor: pointer;
+      transition: opacity 0.8s ease;
     }
-
-    body {
-      display: flex;
-      flex-direction: column;
+    #curtain.gone { opacity: 0; pointer-events: none; }
+    #curtain-title {
+      font-size: clamp(1rem, 5vw, 2rem);
+      letter-spacing: 0.3em;
+      color: #fff;
+      text-align: center;
+      line-height: 1.6;
     }
+    #curtain-sub { font-size: clamp(0.6rem, 2vw, 0.85rem); color: #444; letter-spacing: 0.25em; }
+    #curtain-btn {
+      margin-top: 1rem;
+      padding: 0.6rem 2.2rem;
+      border: 1px solid #333;
+      background: transparent;
+      color: #666;
+      font-family: monospace;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    #curtain-btn:hover { border-color: #888; color: #ddd; }
 
     /* ── Header ── */
-    header {
-      flex-shrink: 0;
-      text-align: center;
-      padding: 0.6rem 1rem 0.4rem;
-    }
-
-    h1 {
-      font-size: clamp(0.55rem, 2.5vw, 0.8rem);
-      letter-spacing: 0.3em;
-      color: #444;
-      text-transform: uppercase;
-    }
+    header { flex-shrink: 0; text-align: center; padding: 0.55rem 1rem 0.35rem; }
+    h1 { font-size: clamp(0.5rem, 2.2vw, 0.75rem); letter-spacing: 0.32em; color: #383838; text-transform: uppercase; }
 
     /* ── Terminal window ── */
     #terminal-wrap {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
+      flex: 1; display: flex; flex-direction: column; min-height: 0;
       margin: 0 0.5rem;
-      border: 1px solid #1e1e1e;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 0 40px rgba(0,0,0,0.9);
+      border: 1px solid #181818; border-radius: 8px; overflow: hidden;
+      box-shadow: 0 0 50px rgba(0,0,0,0.95);
     }
-
     .titlebar {
-      flex-shrink: 0;
-      background: #141414;
-      border-bottom: 1px solid #1e1e1e;
-      padding: 0.45rem 0.8rem;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
+      flex-shrink: 0; background: #111; border-bottom: 1px solid #1a1a1a;
+      padding: 0.42rem 0.8rem; display: flex; align-items: center; gap: 0.4rem;
     }
-
     .dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
-    .dot.r { background: #ff5f57; }
-    .dot.y { background: #febc2e; }
-    .dot.g { background: #28c840; }
-
-    .titlebar-label {
-      flex: 1;
-      text-align: center;
-      font-size: 0.65rem;
-      color: #383838;
-      letter-spacing: 0.08em;
-    }
-
-    #terminal-container {
-      flex: 1;
-      min-height: 0;
-      background: #0d0d0d;
-      padding: 2px;
-      overflow: hidden;
-    }
-
-    /* xterm overrides */
+    .dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
+    .titlebar-label { flex: 1; text-align: center; font-size: 0.62rem; color: #2e2e2e; letter-spacing: 0.08em; }
+    #terminal-container { flex: 1; min-height: 0; background: #0d0d0d; padding: 2px; overflow: hidden; }
     .xterm { height: 100%; }
     .xterm-viewport { overflow-y: auto !important; }
 
-    /* ── Footer bar ── */
+    /* ── Footer ── */
     footer {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      padding: 0.4rem 1rem;
-      border-top: 1px solid #111;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      gap: 0.8rem; padding: 0.38rem 1rem; border-top: 1px solid #0f0f0f;
     }
-
-    #status {
-      font-size: 0.65rem;
-      color: #333;
-      letter-spacing: 0.12em;
-    }
-
+    #status { font-size: 0.62rem; color: #2a2a2a; letter-spacing: 0.12em; }
     button {
-      background: transparent;
-      border: 1px solid #2a2a2a;
-      color: #555;
-      padding: 0.25rem 0.9rem;
-      font-family: monospace;
-      font-size: 0.65rem;
-      letter-spacing: 0.1em;
-      cursor: pointer;
-      border-radius: 4px;
-      transition: border-color 0.15s, color 0.15s;
-      -webkit-tap-highlight-color: transparent;
+      background: transparent; border: 1px solid #222; color: #444;
+      padding: 0.22rem 0.75rem; font-family: monospace; font-size: 0.62rem;
+      letter-spacing: 0.1em; cursor: pointer; border-radius: 4px;
+      transition: border-color 0.15s, color 0.15s; -webkit-tap-highlight-color: transparent;
     }
-    button:hover, button:active { border-color: #555; color: #ccc; }
+    button:hover, button:active { border-color: #555; color: #bbb; }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>Hello, World &mdash; An Epic in Seven Acts</h1>
-  </header>
+<!-- ── Curtain ─────────────────────────────────────────────── -->
+<div id="curtain" onclick="beginEpic()">
+  <div id="curtain-title">HELLO, WORLD<br><span style="font-size:0.5em;color:#333;letter-spacing:0.4em">AN EPIC IN SEVEN ACTS</span></div>
+  <div id="curtain-sub">13,800,000,000 years in the making</div>
+  <button id="curtain-btn">▶ &nbsp; BEGIN</button>
+</div>
 
-  <div id="terminal-wrap">
-    <div class="titlebar">
-      <span class="dot r"></span>
-      <span class="dot y"></span>
-      <span class="dot g"></span>
-      <span class="titlebar-label">main.py &mdash; 13,800,000,000 years in the making</span>
-    </div>
-    <div id="terminal-container">
-      <div id="terminal"></div>
-    </div>
+<header><h1>Hello, World &mdash; An Epic in Seven Acts</h1></header>
+
+<div id="terminal-wrap">
+  <div class="titlebar">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span class="titlebar-label">main.py &mdash; python3</span>
   </div>
+  <div id="terminal-container"><div id="terminal"></div></div>
+</div>
 
-  <footer>
-    <span id="status">connecting…</span>
-    <button id="btn-restart" style="display:none" onclick="restart()">↺ Run Again</button>
-  </footer>
+<footer>
+  <span id="status">waiting…</span>
+  <button id="btn-mute"  onclick="toggleMute()">♪ mute</button>
+  <button id="btn-restart" style="display:none" onclick="restart()">↺ again</button>
+</footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
-  <script>
-    // ── Font size: scale down on narrow screens ──────────────────────────────
-    function pickFontSize() {
-      const w = window.innerWidth;
-      if (w < 400)  return 9;
-      if (w < 600)  return 10;
-      if (w < 900)  return 11;
-      return 13;
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  ORCHESTRAL MUSIC ENGINE
+// ═══════════════════════════════════════════════════════════════
+
+class Orchestra {
+  constructor() {
+    // Shared effects
+    this.hall   = new Tone.Reverb({ decay: 4.5, wet: 0.38 }).toDestination();
+    this.small  = new Tone.Reverb({ decay: 1.2, wet: 0.18 }).toDestination();
+
+    // Instruments
+    this.pad = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: 'sine' },
+      envelope:   { attack: 2.2, decay: 1, sustain: 0.85, release: 5 },
+    }).connect(this.hall);
+    this.pad.volume.value = -12;
+
+    this.strings = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: 'sawtooth' },
+      envelope:   { attack: 0.8, decay: 0.5, sustain: 0.9, release: 3 },
+    }).connect(this.hall);
+    this.strings.volume.value = -20;
+
+    this.brass = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: 'square4' },
+      envelope:   { attack: 0.08, decay: 0.25, sustain: 0.75, release: 0.6 },
+    }).connect(this.small);
+    this.brass.volume.value = -20;
+
+    this.bass = new Tone.Synth({
+      oscillator: { type: 'triangle' },
+      envelope:   { attack: 0.35, decay: 0.6, sustain: 0.8, release: 2 },
+    }).toDestination();
+    this.bass.volume.value = -10;
+
+    this.kick = new Tone.MembraneSynth({ pitchDecay: 0.06, octaves: 7 }).toDestination();
+    this.kick.volume.value = -4;
+
+    this.snare = new Tone.NoiseSynth({
+      noise: { type: 'white' },
+      envelope: { attack: 0.001, decay: 0.14, sustain: 0, release: 0.08 },
+    }).toDestination();
+    this.snare.volume.value = -18;
+
+    this.loops   = [];
+    this.current = null;
+    this.textBuf = '';
+    this.muted   = false;
+
+    // Act detection patterns (ordered most specific → least)
+    this.ACT_MAP = [
+      [/ACT VII|REVELATION|Hello.*World.*final|HELLO.*WORLD/s,  'revelation'],
+      [/ACT VI|THE MIRACLE|core dumped|Segmentation Fault/,     'miracle'   ],
+      [/ACT V|WAR OF NULL|BATTLE COMMENCES/,                    'battle'    ],
+      [/ACT IV|LOVE STORY|Sir Haitch|Lady Doubleyou/,           'love'      ],
+      [/ACT III|THE TERROR|LORD SEGFAULT|DARK ARMY/,            'terror'    ],
+      [/ACT II|PROPHECY|Ur-Namma|clay tablet/,                  'prophecy'  ],
+      [/ACT I|GENESIS|UNIVERSE BOOTSTRAPPING/,                  'genesis'   ],
+    ];
+  }
+
+  // ── Start / stop ───────────────────────────────────────────
+
+  async start() {
+    await Tone.start();
+    this._switch('void');
+  }
+
+  stop() {
+    this._clearLoops();
+    Tone.Transport.stop();
+    Tone.Transport.cancel();
+    this.current = null;
+  }
+
+  // ── Feed terminal text for act detection ───────────────────
+
+  feed(raw) {
+    const clean = raw.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+                     .replace(/[^\x20-\x7e\n]/g, '');
+    this.textBuf = (this.textBuf + clean).slice(-600);
+    for (const [re, theme] of this.ACT_MAP) {
+      if (re.test(this.textBuf)) { this._switch(theme); break; }
     }
+  }
 
-    const term = new Terminal({
-      theme: {
-        background:    '#0d0d0d',
-        foreground:    '#d0d0d0',
-        cursor:        '#ffffff',
-        black:         '#1a1a1a',  brightBlack:   '#555555',
-        red:           '#ff5f57',  brightRed:     '#ff6e67',
-        green:         '#28c840',  brightGreen:   '#5af78e',
-        yellow:        '#febc2e',  brightYellow:  '#ffea7f',
-        blue:          '#4a9eff',  brightBlue:    '#6fc3ff',
-        magenta:       '#c678dd',  brightMagenta: '#e89ef8',
-        cyan:          '#56b6c2',  brightCyan:    '#8be9fd',
-        white:         '#d0d0d0',  brightWhite:   '#ffffff',
-      },
-      fontFamily: '"Cascadia Code", "Fira Code", "JetBrains Mono", "Courier New", monospace',
-      fontSize: pickFontSize(),
-      lineHeight: 1.2,
-      cursorStyle: 'block',
-      cursorBlink: true,
-      scrollback: 10000,
-      disableStdin: true,          // never pop the mobile keyboard
-      allowTransparency: false,
-    });
+  // ── Volume / mute ──────────────────────────────────────────
 
-    const fitAddon = new FitAddon.FitAddon();
-    term.loadAddon(fitAddon);
-    term.open(document.getElementById('terminal'));
+  setMuted(v) {
+    this.muted = v;
+    Tone.Destination.mute = v;
+  }
 
-    function fit() {
-      term.options.fontSize = pickFontSize();
-      fitAddon.fit();
-    }
-    fit();
+  // ── Theme switcher ─────────────────────────────────────────
 
-    // ── WebSocket ────────────────────────────────────────────────────────────
-    const statusEl  = document.getElementById('status');
-    const btnRestart = document.getElementById('btn-restart');
-    let ws = null;
+  _switch(name) {
+    if (name === this.current) return;
+    this.current = name;
+    this._clearLoops();
+    Tone.Transport.stop();
+    Tone.Transport.cancel();
 
-    function setStatus(text, color) {
-      statusEl.textContent = text;
-      statusEl.style.color = color || '#333';
-    }
+    const builders = {
+      void:       () => this._void(),
+      genesis:    () => this._genesis(),
+      prophecy:   () => this._prophecy(),
+      terror:     () => this._terror(),
+      love:       () => this._love(),
+      battle:     () => this._battle(),
+      miracle:    () => this._miracle(),
+      revelation: () => this._revelation(),
+    };
+    (builders[name] || builders.void)();
+    Tone.Transport.start();
+  }
 
-    function sendResize() {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
-      }
-    }
+  _clearLoops() {
+    this.loops.forEach(l => { try { l.stop(0); l.dispose(); } catch (_) {} });
+    this.loops = [];
+  }
 
-    function connect() {
-      btnRestart.style.display = 'none';
-      term.reset();
-      setStatus('connecting…');
+  _seq(cb, pattern, sub) {
+    const s = new Tone.Sequence(cb, pattern, sub);
+    s.start(0);
+    this.loops.push(s);
+    return s;
+  }
 
-      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-      ws = new WebSocket(`${proto}://${location.host}/ws`);
-      ws.binaryType = 'arraybuffer';
+  _loop(cb, interval) {
+    const l = new Tone.Loop(cb, interval);
+    l.start(0);
+    this.loops.push(l);
+    return l;
+  }
 
-      ws.onopen = () => {
-        setStatus('● running', '#28c840');
-        sendResize();
-      };
+  // ══════════════════════════════════════════════════════════
+  //  THEMES
+  // ══════════════════════════════════════════════════════════
 
-      ws.onmessage = (e) => {
-        term.write(new Uint8Array(e.data));
-      };
+  _void() {
+    Tone.Transport.bpm.value = 32;
+    // Slow drifting drone
+    this._seq((t, n) => { if (n) this.pad.triggerAttackRelease(n, '1m', t, 0.28); },
+      ['Bb1', null, 'F2', null, 'Bb1', null, null, null], '2n');
+    // Distant high shimmer every 8 bars
+    let bar = 0;
+    this._loop(t => {
+      if (bar++ % 8 === 0) this.pad.triggerAttackRelease(['D5','F5'], '2n', t, 0.08);
+    }, '1m');
+  }
 
-      ws.onclose = () => {
-        setStatus('● finished', '#febc2e');
-        btnRestart.style.display = 'inline-block';
-      };
+  _genesis() {
+    Tone.Transport.bpm.value = 66;
+    // Rising bass arpeggio
+    this._seq((t, n) => { if (n) this.bass.triggerAttackRelease(n, '4n', t, 0.65); },
+      ['C2', 'G2', 'E2', 'G2'], '4n');
+    // Swelling string chords that grow
+    const chords = [
+      ['C3','E3','G3'], ['C3','E3','G3','C4'],
+      ['C3','G3','C4','E4'], ['G3','C4','E4','G4'],
+    ];
+    let i = 0;
+    this._loop(t => {
+      const vel = 0.25 + (i % 4) * 0.15;
+      this.strings.triggerAttackRelease(chords[i % 4], '1m', t, vel);
+      i++;
+    }, '1m');
+  }
 
-      ws.onerror = () => {
-        setStatus('● error', '#ff5f57');
-        btnRestart.style.display = 'inline-block';
-      };
-    }
+  _prophecy() {
+    Tone.Transport.bpm.value = 50;
+    // Dorian mystery melody
+    this._seq((t, n) => { if (n) this.strings.triggerAttackRelease([n], '2n', t, 0.45); },
+      ['D4', null, 'F4', null, 'C4', null, 'A3', null,
+       'Bb3', null, 'A3', null, 'D4', null, null, null], '4n');
+    // Deep bass pulse
+    this._seq((t, n) => { if (n) this.bass.triggerAttackRelease(n, '4n', t, 0.38); },
+      ['D2', null, 'A2', null], '4n');
+    // Eerie high pad every 2 bars
+    let k = 0;
+    this._loop(t => {
+      if (k++ % 2 === 0) this.pad.triggerAttackRelease(['A4','C5'], '1m', t, 0.12);
+    }, '1m');
+  }
 
-    function restart() {
-      if (ws) ws.close();
-      fit();
-      connect();
-    }
+  _terror() {
+    Tone.Transport.bpm.value = 96;
+    // Military kick pattern
+    this._seq((t, n) => { if (n) this.kick.triggerAttackRelease('C1', '16n', t, n); },
+      [0.9, 0, 0, 0,   0.9, 0, 0.5, 0,   0.9, 0, 0, 0,   0.9, 0.4, 0, 0], '8n');
+    // Snare
+    this._seq((t, n) => { if (n) this.snare.triggerAttackRelease('8n', t, n); },
+      [0, 0, 0.7, 0,   0, 0, 0.7, 0.4], '8n');
+    // Dark bass ostinato
+    this._seq((t, n) => { if (n) this.bass.triggerAttackRelease(n, '8n', t, 0.85); },
+      ['D2','D2', null,'Bb1', 'D2', null,'Bb1', null,
+       'F2','D2', null,'Bb1', 'Eb2',null,'D2',  null], '8n');
+    // High string tremolo
+    this._seq((t, n) => { if (n) this.strings.triggerAttackRelease([n], '16n', t, 0.35); },
+      ['D5','D5','Eb5','D5', 'D5','C5','D5','Eb5'], '8n');
+    // Brass stabs
+    this._seq((t, n) => { if (n) this.brass.triggerAttackRelease(n, '16n', t, 0.85); },
+      [null,null,['D4','F4'],null, null,null,['Eb4','G4'],null,
+       null,['D4','F4'],null,null, ['Bb3','D4'],null,null,null], '8n');
+  }
 
-    // Re-fit on resize and tell server the new dimensions
-    window.addEventListener('resize', () => { fit(); sendResize(); });
+  _love() {
+    Tone.Transport.bpm.value = 58;
+    // Sweeping string melody in G
+    this._seq((t, n) => { if (n) this.strings.triggerAttackRelease([n], '2n', t, 0.55); },
+      ['G4','B4','D5','G5', 'F#5','E5','D5','B4',
+       'G4','A4','C5','E5', 'D5', 'C5','B4', null], '4n');
+    // Warm harmonic accompaniment
+    const harmony = [['G2','D3','B3'],['G2','D3','B3'],['C3','G3','E4'],['D3','A3','F#4']];
+    let j = 0;
+    this._loop(t => {
+      this.pad.triggerAttackRelease(harmony[j++ % 4], '1m', t, 0.28);
+    }, '1m');
+    // Pizzicato bass
+    this._seq((t, n) => { if (n) this.bass.triggerAttackRelease(n, '8n', t, 0.6); },
+      ['G2', null, 'D2', null, 'G2', null, 'D2', 'G2'], '4n');
+  }
 
-    connect();
-  </script>
+  _battle() {
+    Tone.Transport.bpm.value = 138;
+    // War drums
+    this._seq((t, n) => { if (n) this.kick.triggerAttackRelease('C1', '16n', t, n); },
+      [0.9, 0, 0.5, 0,  0.9, 0.6, 0, 0.4,  0.9, 0, 0.5, 0,  0.9, 0, 0.6, 0], '8n');
+    this._seq((t, n) => { if (n) this.snare.triggerAttackRelease('8n', t, n); },
+      [0, 0, 0.8, 0,  0, 0, 0.8, 0.5,  0, 0, 0.8, 0,  0.4, 0, 0.8, 0], '8n');
+    // Driving bass
+    this._seq((t, n) => { if (n) this.bass.triggerAttackRelease(n, '8n', t, 0.88); },
+      ['D2','A2','Bb2','A2', 'F2','G2','A2','A2',
+       'D2','A2','G2', 'A2', 'Bb2','A2','F2','D2'], '8n');
+    // Fury strings
+    this._seq((t, n) => { if (n) this.strings.triggerAttackRelease([n], '16n', t, 0.45); },
+      ['D5','C5','Bb4','A4', 'G4','A4','Bb4','C5'], '8n');
+    // Brass battle calls
+    this._seq((t, n) => { if (n) this.brass.triggerAttackRelease(n, '16n', t, 0.88); },
+      [['D4','F4','A4'], null, null, null,
+       ['Bb3','D4','F4'], null, ['A3','C4','E4'], null,
+       ['D4','F4','A4'], ['D4','F4','A4'], null, null,
+       ['G4','Bb4','D5'], null, null, null], '8n');
+  }
+
+  _miracle() {
+    Tone.Transport.bpm.value = 70;
+    // Resolution to D major — warm and swelling
+    const chords = [
+      ['D3','F#3','A3','D4'], ['G3','B3','D4','G4'],
+      ['A3','C#4','E4','A4'], ['D3','F#3','A3','D4','F#4'],
+    ];
+    let m = 0;
+    this._loop(t => {
+      const vel = 0.5 + (m % 4) * 0.1;
+      this.pad.triggerAttackRelease(chords[m++ % 4], '1m', t, Math.min(vel, 0.9));
+    }, '1m');
+    // Heroic bass
+    this._seq((t, n) => { if (n) this.bass.triggerAttackRelease(n, '2n', t, 0.72); },
+      ['D2', 'A2', 'G2', 'A2'], '2n');
+    // Soft brass colour
+    this._seq((t, n) => { if (n) this.brass.triggerAttackRelease(n, '2n', t, 0.4); },
+      [null, ['F#4','A4'], null, ['A4','D5']], '2n');
+  }
+
+  _revelation() {
+    Tone.Transport.bpm.value = 100;
+    // Triumphant fanfare
+    this._seq((t, n) => { if (n) this.brass.triggerAttackRelease(n, '8n', t, 0.9); },
+      [['C4','E4','G4'], null, ['C4','E4','G4'], ['E4','G4','C5'],
+       ['G4','C5','E5'], null, null, null,
+       ['F4','A4','C5'], null, ['F4','A4','C5'], ['A4','C5','F5'],
+       ['G4','B4','D5'], null, ['G4','B4','D5'], null], '8n');
+    // Full string swell
+    let r = 0;
+    const glory = [
+      ['C3','G3','C4','E4','G4'], ['F3','A3','C4','F4','A4'],
+      ['G3','B3','D4','G4','B4'], ['C3','E3','G3','C4','E4','G4'],
+    ];
+    this._loop(t => {
+      this.pad.triggerAttackRelease(glory[r++ % 4], '1m', t, 0.85);
+    }, '1m');
+    // March bass
+    this._seq((t, n) => { if (n) this.bass.triggerAttackRelease(n, '4n', t, 0.85); },
+      ['C2', null, 'G2', null, 'C2', null, 'F2', 'G2'], '4n');
+    // March percussion
+    this._seq((t, n) => { if (n) this.kick.triggerAttackRelease('C1', '16n', t, n); },
+      [0.9, 0, 0, 0,  0.9, 0, 0, 0,  0.9, 0, 0.6, 0,  0.9, 0, 0.5, 0.4], '8n');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TERMINAL
+// ═══════════════════════════════════════════════════════════════
+
+function pickFontSize() {
+  const w = window.innerWidth;
+  if (w < 400) return 9; if (w < 600) return 10; if (w < 900) return 11; return 13;
+}
+
+const term = new Terminal({
+  theme: {
+    background:'#0d0d0d', foreground:'#d0d0d0', cursor:'#ffffff',
+    black:'#1a1a1a',  brightBlack:'#555555',
+    red:'#ff5f57',    brightRed:'#ff6e67',
+    green:'#28c840',  brightGreen:'#5af78e',
+    yellow:'#febc2e', brightYellow:'#ffea7f',
+    blue:'#4a9eff',   brightBlue:'#6fc3ff',
+    magenta:'#c678dd',brightMagenta:'#e89ef8',
+    cyan:'#56b6c2',   brightCyan:'#8be9fd',
+    white:'#d0d0d0',  brightWhite:'#ffffff',
+  },
+  fontFamily: '"Cascadia Code","Fira Code","JetBrains Mono","Courier New",monospace',
+  fontSize: pickFontSize(),
+  lineHeight: 1.2,
+  cursorStyle: 'block', cursorBlink: true,
+  scrollback: 10000, disableStdin: true, allowTransparency: false,
+});
+
+const fitAddon = new FitAddon.FitAddon();
+term.loadAddon(fitAddon);
+term.open(document.getElementById('terminal'));
+
+function fit() { term.options.fontSize = pickFontSize(); fitAddon.fit(); }
+fit();
+
+// ═══════════════════════════════════════════════════════════════
+//  APP STATE
+// ═══════════════════════════════════════════════════════════════
+
+const orchestra = new Orchestra();
+const statusEl  = document.getElementById('status');
+const btnMute   = document.getElementById('btn-mute');
+const btnRestart= document.getElementById('btn-restart');
+let ws = null;
+let started = false;
+
+function setStatus(txt, col) { statusEl.textContent = txt; statusEl.style.color = col || '#2a2a2a'; }
+
+function sendResize() {
+  if (ws && ws.readyState === WebSocket.OPEN)
+    ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+}
+
+function connect() {
+  btnRestart.style.display = 'none';
+  term.reset();
+  orchestra.textBuf = '';
+  setStatus('connecting…');
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws`);
+  ws.binaryType = 'arraybuffer';
+  ws.onopen  = () => { setStatus('● running', '#28c840'); sendResize(); };
+  ws.onmessage = e => {
+    const bytes = new Uint8Array(e.data);
+    term.write(bytes);
+    orchestra.feed(new TextDecoder().decode(bytes));
+  };
+  ws.onclose = () => { setStatus('● fin', '#febc2e'); btnRestart.style.display = 'inline-block'; };
+  ws.onerror = () => { setStatus('● error', '#ff5f57'); btnRestart.style.display = 'inline-block'; };
+}
+
+async function beginEpic() {
+  if (started) return;
+  started = true;
+  const curtain = document.getElementById('curtain');
+  curtain.classList.add('gone');
+  await orchestra.start();
+  connect();
+}
+
+function restart() {
+  if (ws) ws.close();
+  fit();
+  orchestra.stop();
+  orchestra.start();
+  connect();
+}
+
+function toggleMute() {
+  const m = !orchestra.muted;
+  orchestra.setMuted(m);
+  btnMute.textContent = m ? '♪ unmute' : '♪ mute';
+}
+
+window.addEventListener('resize', () => { fit(); sendResize(); });
+</script>
 </body>
 </html>
