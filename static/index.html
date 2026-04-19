@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Hello, World — An Epic in Seven Acts</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #080808;
+      color: #ccc;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      flex-shrink: 0;
+      text-align: center;
+      padding: 0.6rem 1rem 0.4rem;
+    }
+
+    h1 {
+      font-size: clamp(0.55rem, 2.5vw, 0.8rem);
+      letter-spacing: 0.3em;
+      color: #444;
+      text-transform: uppercase;
+    }
+
+    /* ── Terminal window ── */
+    #terminal-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      margin: 0 0.5rem;
+      border: 1px solid #1e1e1e;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(0,0,0,0.9);
+    }
+
+    .titlebar {
+      flex-shrink: 0;
+      background: #141414;
+      border-bottom: 1px solid #1e1e1e;
+      padding: 0.45rem 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+    .dot.r { background: #ff5f57; }
+    .dot.y { background: #febc2e; }
+    .dot.g { background: #28c840; }
+
+    .titlebar-label {
+      flex: 1;
+      text-align: center;
+      font-size: 0.65rem;
+      color: #383838;
+      letter-spacing: 0.08em;
+    }
+
+    #terminal-container {
+      flex: 1;
+      min-height: 0;
+      background: #0d0d0d;
+      padding: 2px;
+      overflow: hidden;
+    }
+
+    /* xterm overrides */
+    .xterm { height: 100%; }
+    .xterm-viewport { overflow-y: auto !important; }
+
+    /* ── Footer bar ── */
+    footer {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 0.4rem 1rem;
+      border-top: 1px solid #111;
+    }
+
+    #status {
+      font-size: 0.65rem;
+      color: #333;
+      letter-spacing: 0.12em;
+    }
+
+    button {
+      background: transparent;
+      border: 1px solid #2a2a2a;
+      color: #555;
+      padding: 0.25rem 0.9rem;
+      font-family: monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: border-color 0.15s, color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:hover, button:active { border-color: #555; color: #ccc; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Hello, World &mdash; An Epic in Seven Acts</h1>
+  </header>
+
+  <div id="terminal-wrap">
+    <div class="titlebar">
+      <span class="dot r"></span>
+      <span class="dot y"></span>
+      <span class="dot g"></span>
+      <span class="titlebar-label">main.py &mdash; 13,800,000,000 years in the making</span>
+    </div>
+    <div id="terminal-container">
+      <div id="terminal"></div>
+    </div>
+  </div>
+
+  <footer>
+    <span id="status">connecting…</span>
+    <button id="btn-restart" style="display:none" onclick="restart()">↺ Run Again</button>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+  <script>
+    // ── Font size: scale down on narrow screens ──────────────────────────────
+    function pickFontSize() {
+      const w = window.innerWidth;
+      if (w < 400)  return 9;
+      if (w < 600)  return 10;
+      if (w < 900)  return 11;
+      return 13;
+    }
+
+    const term = new Terminal({
+      theme: {
+        background:    '#0d0d0d',
+        foreground:    '#d0d0d0',
+        cursor:        '#ffffff',
+        black:         '#1a1a1a',  brightBlack:   '#555555',
+        red:           '#ff5f57',  brightRed:     '#ff6e67',
+        green:         '#28c840',  brightGreen:   '#5af78e',
+        yellow:        '#febc2e',  brightYellow:  '#ffea7f',
+        blue:          '#4a9eff',  brightBlue:    '#6fc3ff',
+        magenta:       '#c678dd',  brightMagenta: '#e89ef8',
+        cyan:          '#56b6c2',  brightCyan:    '#8be9fd',
+        white:         '#d0d0d0',  brightWhite:   '#ffffff',
+      },
+      fontFamily: '"Cascadia Code", "Fira Code", "JetBrains Mono", "Courier New", monospace',
+      fontSize: pickFontSize(),
+      lineHeight: 1.2,
+      cursorStyle: 'block',
+      cursorBlink: true,
+      scrollback: 10000,
+      disableStdin: true,          // never pop the mobile keyboard
+      allowTransparency: false,
+    });
+
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById('terminal'));
+
+    function fit() {
+      term.options.fontSize = pickFontSize();
+      fitAddon.fit();
+    }
+    fit();
+
+    // ── WebSocket ────────────────────────────────────────────────────────────
+    const statusEl  = document.getElementById('status');
+    const btnRestart = document.getElementById('btn-restart');
+    let ws = null;
+
+    function setStatus(text, color) {
+      statusEl.textContent = text;
+      statusEl.style.color = color || '#333';
+    }
+
+    function sendResize() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+      }
+    }
+
+    function connect() {
+      btnRestart.style.display = 'none';
+      term.reset();
+      setStatus('connecting…');
+
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      ws = new WebSocket(`${proto}://${location.host}/ws`);
+      ws.binaryType = 'arraybuffer';
+
+      ws.onopen = () => {
+        setStatus('● running', '#28c840');
+        sendResize();
+      };
+
+      ws.onmessage = (e) => {
+        term.write(new Uint8Array(e.data));
+      };
+
+      ws.onclose = () => {
+        setStatus('● finished', '#febc2e');
+        btnRestart.style.display = 'inline-block';
+      };
+
+      ws.onerror = () => {
+        setStatus('● error', '#ff5f57');
+        btnRestart.style.display = 'inline-block';
+      };
+    }
+
+    function restart() {
+      if (ws) ws.close();
+      fit();
+      connect();
+    }
+
+    // Re-fit on resize and tell server the new dimensions
+    window.addEventListener('resize', () => { fit(); sendResize(); });
+
+    connect();
+  </script>
+</body>
+</html>
