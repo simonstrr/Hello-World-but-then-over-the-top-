@@ -162,13 +162,15 @@ class CountryBand {
     this.muted   = false;
 
     this.ACT_MAP = [
-      [/ACT VII|REVELATION|HELLO.*WORLD/s,           'revelation'],
-      [/ACT VI|THE MIRACLE|core dumped/,              'miracle'   ],
-      [/ACT V|WAR OF NULL|BATTLE COMMENCES/,          'battle'    ],
-      [/ACT IV|LOVE STORY|Sir Haitch|Lady Doubleyou/, 'love'      ],
-      [/ACT III|THE TERROR|LORD SEGFAULT|DARK ARMY/,  'terror'    ],
-      [/ACT II|PROPHECY|Ur-Namma|clay tablet/,        'prophecy'  ],
-      [/ACT I|GENESIS|UNIVERSE BOOTSTRAPPING/,        'genesis'   ],
+      [/ACT IX|HELLO, WORLD$/m,                              'revelation'],
+      [/ACT VIII|WORLD RIDES IN|OWN DAMN HORSE/,             'miracle'   ],
+      [/ACT VII|SHOOTOUT|O\.K\. POINTER/,                    'battle'    ],
+      [/ACT VI|THE LONG RIDE/,                               'love'      ],
+      [/ACT V|THE TAKING OF WORLD|Stack Overflow County/,    'terror'    ],
+      [/ACT IV|McGEE RIDES INTO TOWN|SEG FAULT McGEE/,       'terror'    ],
+      [/ACT III|WORLD WALKS IN/,                             'love'      ],
+      [/ACT II|BROKEN ARROW SALOON|Ken Thompson/,            'prophecy'  ],
+      [/ACT I|BORN WITH A SEMICOLON|HELLO HAS ENTERED/,      'genesis'   ],
     ];
 
     // Inject YouTube IFrame API script once
